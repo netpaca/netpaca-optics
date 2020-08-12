@@ -116,6 +116,14 @@ If you do not have make installed then you can run the command:
 docker build --tag netpaca-optics:0.1.0 .
 ```
 
+# Start the Health Monitoring System
+
+Use docker-compose to bring up the collection of docker containers:
+
+```
+docker-compose up -d
+```
+
 # The `netpaca` command
 
 The `netpaca` command is executed in the container image to perform the metric
