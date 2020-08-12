@@ -73,15 +73,10 @@
 #       exporter: <str> - identifies a non-packaged exporter class entry-point
 # -----------------------------------------------------------------------------
 
-#[exporters.circonus]
-#    use = "nwka_netmon.exporters:circonus"
-#    config.circonus_datasubmission_url = "$CIRCONUS_URL"
-#
-
 [exporters.influxdb]
     use = "netpaca.exporters:influxdb"
     config.server_url = "$INFLUXDB_SERVER"
-    config.database = "db0"
+    config.database = "optics"
 
 # -----------------------------------------------------------------------------
 # Device Drivers:

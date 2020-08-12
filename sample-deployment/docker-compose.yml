@@ -1,0 +1,126 @@
+# -----------------------------------------------------------------------------
+# Netpaca Optic Monitoring
+#
+# This docker-compose file is used to manage the containers responsible for the
+# interface optics monitoring service.  This includes the following:
+#
+#   - Grafana for visualization
+#   - InfluxDB for TSDB
+#   - multiple collector containers that are used to monitor slices
+#     of the network inventory
+# -----------------------------------------------------------------------------
+
+version: '3.7'
+
+# -----------------------------------------------------------------------------
+# Define the common set of netpaca container options that will be reused for
+# each of the inventory slices; requires docker-compose version 3.7
+# -----------------------------------------------------------------------------
+
+x-netpaca:
+  &default-netpaca
+  image: netpaca-optics:0.1.0
+
+  # we're going to enable debug logging by default, so we want to cap
+  # the filesystem resources used
+
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+  # connect the container to the shared docker network so the exporter
+  # configurations will get the metrics to the influxdb container
+
+  networks:
+    netpaca-health-monitoring:
+
+  volumes:
+    - $PWD/netpaca.toml:/etc/netpaca/netpaca.toml
+    - $PWD/inventory.csv:/etc/netpaca/inventory.csv
+
+  # the following variables are using _inside_ the container by the the
+  # netpaca.toml configuation file
+
+  environment:
+    INVENTORY_CSV: /etc/netpaca/inventory.csv
+    INFLUXDB_SERVER: http://influxdb:8086
+
+  # pass the container environment variables that contain the device login
+  # credentials so that the values used in the netpaca.toml file exists and can
+  # be used.
+
+  env_file:
+    - $PWD/credentials.env
+
+# -----------------------------------------------------------------------------
+#
+#                                  Common Services
+#
+# -----------------------------------------------------------------------------
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+       - 13000:3000
+    environment:
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+    user: "0"   # needed for volume mounting
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      bp-netmon:
+
+  renderer:
+    image: grafana/grafana-image-renderer:latest
+    ports:
+      - 8081:8081
+    networks:
+      bp-netmon:
+
+  influxdb:
+    image: influxdb
+    ports:
+      - 8086:8086
+    volumes:
+      - $PWD:/var/lib/influxdb
+    networks:
+      bp-netmon:
+
+# -----------------------------------------------------------------------------
+#
+#                     Monitoring Services for slices of inventory
+#
+# -----------------------------------------------------------------------------
+
+  netmon-core:
+    << : *default-netmon
+    command: >
+      nwka-netmon
+      -C /etc/network-monitoring/config.toml
+      --limit region=ballparks
+      --limit role=core
+      --log-level debug
+
+  netmon-noncore:
+    << : *default-netmon
+    command: >
+      nwka-netmon
+      -C /etc/network-monitoring/config.toml
+      --limit region=ballparks
+      --exclude role=core
+      --exclude role=firewall
+      --log-level debug
+
+# -----------------------------------------------------------------------------
+#
+#                                  Networks
+#
+# -----------------------------------------------------------------------------
+
+networks:
+  bp-netmon:
