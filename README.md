@@ -11,3 +11,7 @@ like a dashboard that looks like this:
    * Cisco IOS via SSH
    * Cisco NX-OS via NXAPI
   
+# Usage
+
+For setup and usage instructions, please refer to the [sample
+deployment](sample-deployment/README.md) docs.
