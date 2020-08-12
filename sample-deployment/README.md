@@ -52,6 +52,12 @@ want to use.
 
 ## Setup your InfluxDB instance
 
+Install InfluxDB from DockerHub:
+
+```
+docker pull influxdb
+```
+
 The `netpaca.toml` file is configured to use a database with the name `optics`.  When you
 setup your InfluxDB system, make sure you create this database.  You should also
 set a database retention size so you do not fillup your server filesystem.
