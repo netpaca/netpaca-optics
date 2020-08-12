@@ -100,6 +100,22 @@ would only have this service defined.
     command: netpaca -C /etc/netpaca/netpaca.toml --log-level debug
 ```
 
+## Build the netpaca-optics Docker image
+
+You will need to git clone this repository and then build the Docker image.  If you have
+`make` installed on your system you can run the following command in the root directory
+where the `Dockerfile` is located:
+
+```
+$ make
+```
+
+If you do not have make installed then you can run the command:
+
+```
+docker build --tag netpaca-optics:0.1.0 .
+```
+
 # The `netpaca` command
 
 The `netpaca` command is executed in the container image to perform the metric
