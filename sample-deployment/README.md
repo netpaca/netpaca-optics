@@ -37,6 +37,13 @@ You will need to provide an inventory CSV file that defines the `host`,
 and they will present as metric tag-values. For example, if you define a column
 called `site`, then your metrics will include the tag `site=<value>`.
 
+This sample creates two monitoring collector containers using a `role` column as
+a filter. One container will monitor devices with role = "core" and the other
+will monitor all other devices.  If you are using Netbox for example, this is
+the device role value. If you do not have a role (or similar), or do not want to
+create multiple collector containers based on role, then you do not need the
+role column.
+
 You are responsible for building this inventory file.  If you use Netbox, you
 can find a python script
 [here](https://github.com/netpaca/netpaca/blob/master/examples/netbox_inventory.py).
@@ -71,6 +78,24 @@ the InfluxDB system.  Your settings should look like this:
 
 The next step is to import the Dashboard from the [optics-dashboard.json](optics-dashboard.json) file.
 
+## Customize the `docker-compose.yml` file
 
+As noted above the docker compose file defines two collector services that use
+the inventory column `role` to select core verse non-core devices.  You can edit
+this file and customize the number of collector containers in a way that is
+suitable for your environment. 
 
+If you have a small inventory, you could just have one collector container, and you
+would only have this service defined.
 
+```yaml
+  optics-all:
+    << : *default-netpaca
+    command: netpaca -C /etc/netpaca/netpaca.toml --log-level debug
+```
+
+# The `netpaca` command
+
+The `netpaca` command is executed in the container image to perform the metric
+collection and export process.  For details on this command, please refer to the
+[netpaca](https://github.com/netpaca/netpaca) repository documents.

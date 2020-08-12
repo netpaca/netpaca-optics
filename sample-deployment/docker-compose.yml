@@ -55,7 +55,7 @@ x-netpaca:
 
 # -----------------------------------------------------------------------------
 #
-#                                  Common Services
+#                            Grafana and InfluxDB Services
 #
 # -----------------------------------------------------------------------------
 
@@ -73,7 +73,7 @@ services:
     volumes:
       - ./data/grafana:/var/lib/grafana
     networks:
-      bp-netmon:
+      netpaca-health-monitoring:
 
   renderer:
     image: grafana/grafana-image-renderer:latest
@@ -89,7 +89,7 @@ services:
     volumes:
       - $PWD:/var/lib/influxdb
     networks:
-      bp-netmon:
+      netpaca-health-monitoring:
 
 # -----------------------------------------------------------------------------
 #
@@ -97,23 +97,20 @@ services:
 #
 # -----------------------------------------------------------------------------
 
-  netmon-core:
-    << : *default-netmon
+  optics-core:
+    << : *default-netpaca
     command: >
-      nwka-netmon
-      -C /etc/network-monitoring/config.toml
-      --limit region=ballparks
+      netpaca
+      -C /etc/netpaca/netpaca.toml
       --limit role=core
       --log-level debug
 
-  netmon-noncore:
-    << : *default-netmon
+  optics-noncore:
+    << : *default-netpaca
     command: >
-      nwka-netmon
-      -C /etc/network-monitoring/config.toml
-      --limit region=ballparks
+      netpaca
+      -C /etc/netpaca/netpaca.toml
       --exclude role=core
-      --exclude role=firewall
       --log-level debug
 
 # -----------------------------------------------------------------------------
@@ -123,4 +120,9 @@ services:
 # -----------------------------------------------------------------------------
 
 networks:
-  bp-netmon:
+  netpaca-health-monitoring:
+    # use an explicit name so that you can use this network with other
+    # docker-compose based health monitoring systems.  If you do not
+    # set the name explicitly, then the name will be mangled with
+    # the docker-compose project name (undesired)
+    name: "netpaca-health-monitoring"
