@@ -100,9 +100,9 @@ When you setup your InfluxDB system, you will see the same name was used above.
 You should also set a database retention size so you do not fillup your server
 filesystem.
 
-```
+```shell
 # get into the influxdb container
-server$ docker-compose exec influxdb bash
+docker-compose exec influxdb bash
 
 # now in container, start the influx command interpreter
 root@09ab53bb0041:/# influx
