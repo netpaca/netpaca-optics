@@ -64,7 +64,7 @@ services:
     image: grafana/grafana:latest
     restart: unless-stopped
     ports:
-       - 13000:3000
+       - 3000:3000
     environment:
       GF_RENDERING_SERVER_URL: http://renderer:8081/render
       GF_RENDERING_CALLBACK_URL: http://grafana:3000/
@@ -80,7 +80,7 @@ services:
     ports:
       - 8081:8081
     networks:
-      bp-netmon:
+      netpaca-health-monitoring:
 
   influxdb:
     image: influxdb
@@ -97,20 +97,27 @@ services:
 #
 # -----------------------------------------------------------------------------
 
-  optics-core:
-    << : *default-netpaca
-    command: >
-      netpaca
-      -C /etc/netpaca/netpaca.toml
-      --limit role=core
-      --log-level debug
+#  optics-core:
+#    << : *default-netpaca
+#    command: >
+#      netpaca
+#      -C /etc/netpaca/netpaca.toml
+#      --limit role=core
+#      --log-level debug
+#
+#  optics-noncore:
+#    << : *default-netpaca
+#    command: >
+#      netpaca
+#      -C /etc/netpaca/netpaca.toml
+#      --exclude role=core
+#      --log-level debug
 
-  optics-noncore:
+  optics-all:
     << : *default-netpaca
     command: >
       netpaca
       -C /etc/netpaca/netpaca.toml
-      --exclude role=core
       --log-level debug
 
 # -----------------------------------------------------------------------------

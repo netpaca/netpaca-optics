@@ -20,6 +20,27 @@ $ docker-compose --version
 docker-compose version 1.26.2, build eefe0d31
 ```
 
+## Build the netpaca-optics Docker image
+
+You will need to git clone this repository and then build the Docker image.  If you have
+`make` installed on your system you can run the following command in the root directory
+where the `Dockerfile` is located:
+
+```
+$ make
+```
+
+If you do not have make installed then you can run the command:
+
+```
+docker build --tag netpaca-optics:0.1.0 .
+```
+
+---
+**CHANGE DIRECTORIES INTO `sample-deployment`**
+
+---
+
 ## Read over `netpaca.toml` Configuration File
 
 Please read through the [netpaca.toml](netpaca.toml) configuration file.  You
@@ -37,13 +58,6 @@ You will need to provide an inventory CSV file that defines the `host`,
 and they will present as metric tag-values. For example, if you define a column
 called `site`, then your metrics will include the tag `site=<value>`.
 
-This sample creates two monitoring collector containers using a `role` column as
-a filter. One container will monitor devices with role = "core" and the other
-will monitor all other devices.  If you are using Netbox for example, this is
-the device role value. If you do not have a role (or similar), or do not want to
-create multiple collector containers based on role, then you do not need the
-role column.
-
 You are responsible for building this inventory file.  If you use Netbox, you
 can find a python script
 [here](https://github.com/netpaca/netpaca/blob/master/examples/netbox_inventory.py).
@@ -58,15 +72,45 @@ Install InfluxDB from DockerHub:
 docker pull influxdb
 ```
 
-The `netpaca.toml` file is configured to use a database with the name `optics`.  When you
-setup your InfluxDB system, make sure you create this database.  You should also
-set a database retention size so you do not fillup your server filesystem.
-
-The InfluxDB command to set a 3 day retention, for example from within
-the influxdb container, run the `influx` command, and then:
+Setup the InfluxDB configuration file
 
 ```
-CREATE RETENTION POLICY three_days ON optics DURATION 72h REPLICATION 1 DEFAULT
+docker run --rm influxdb influxd config > influxdb.conf
+```
+
+Run the initialization setup script:
+
+```
+docker run --rm \
+  -e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=supersecret \
+  -e INFLUXDB_USER=netpaca -e INFLUXDB_USER_PASSWORD=supersecret \
+  -e INFLUXDB_DB=optics \
+  -v $PWD:/var/lib/influxdb \
+  influxdb /init-influxdb.sh
+```
+
+Start the InfluxDB container:
+
+```
+docker-compose up -d influxdb
+```
+
+The `netpaca.toml` file is configured to use a database with the name `optics`. 
+When you setup your InfluxDB system, you will see the same name was used above. 
+You should also set a database retention size so you do not fillup your server
+filesystem.
+
+```shell
+# get into the influxdb container
+docker-compose exec influxdb bash
+
+# now in container, start the influx command interpreter
+root@09ab53bb0041:/# influx
+Connected to http://localhost:8086 version 1.8.1
+InfluxDB shell version: 1.8.1
+
+> CREATE RETENTION POLICY three_days ON optics DURATION 72h REPLICATION 1 DEFAULT
+> exit
 ```
 
 ## Setup your Grafana instance
@@ -77,6 +121,15 @@ Install the grafana docker instance from DockerHub:
 docker pull grafana/grafana
 ```
 
+Start the Grafana container:
+
+```
+docker-compose up -d grafana
+```
+
+Open a web brower to `http://localhost:3000` and login with the default credentials of
+user=admin, password=admin.
+
 Once you've logged into the system you will need to first configure a Datasource to use
 the InfluxDB system.  Your settings should look like this:
 
@@ -84,15 +137,25 @@ the InfluxDB system.  Your settings should look like this:
 
 The next step is to import the Dashboard from the [optics-dashboard.json](optics-dashboard.json) file.
 
+Select the Manage Dashboards option from the left, and the select the Import option:
+
+![import-step-1](import-1.png)
+
+Next use the file-browser to select the `optics-dashbaord.json` file.  Once loaded you will
+see the next dialog where you can change the uid value and select the InfluxDB data source.
+You can name the uid anything you want or leave it as provided.
+
+![import-step-2](import-2.png)
+
+Click the Import button at the bottom, and you should see the dashboard - no data yet, but
+that is expected.
+
+![no-data-dashboard](no-data-dashboard.png)
+
 ## Customize the `docker-compose.yml` file
 
-As noted above the docker compose file defines two collector services that use
-the inventory column `role` to select core verse non-core devices.  You can edit
-this file and customize the number of collector containers in a way that is
-suitable for your environment. 
-
-If you have a small inventory, you could just have one collector container, and you
-would only have this service defined.
+The sample docker-compose.yml file defines only one collector container that will
+pull interface optics from all devices in your inventory:
 
 ```yaml
   optics-all:
@@ -100,29 +163,27 @@ would only have this service defined.
     command: netpaca -C /etc/netpaca/netpaca.toml --log-level debug
 ```
 
-## Build the netpaca-optics Docker image
+You will also see additonal services commented out called `opitcs-core` and `optics-noncore`.
+These exist to illustrate how you could create multiple collector containers to segement
+your inventory into different collector containers. 
 
-You will need to git clone this repository and then build the Docker image.  If you have
-`make` installed on your system you can run the following command in the root directory
-where the `Dockerfile` is located:
-
-```
-$ make
-```
-
-If you do not have make installed then you can run the command:
-
-```
-docker build --tag netpaca-optics:0.1.0 .
-```
 
 # Start the Health Monitoring System
 
-Use docker-compose to bring up the collection of docker containers:
+Use docker-compose to bring up all of the collection of docker containers:
 
 ```
 docker-compose up -d
 ```
+
+You can now look at the collector logs to ensure everything is working.
+
+```
+docker-compose logs -f optics-all
+```
+
+You will soon see the dashboard with active data!
+
 
 # The `netpaca` command
 
