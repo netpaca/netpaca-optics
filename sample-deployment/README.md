@@ -83,7 +83,7 @@ Run the initialization setup script:
 ```
 docker run --rm \
   -e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=supersecret \
-  -e INFLUXDB_USER=homeassistant -e INFLUXDB_USER_PASSWORD=supersecret \
+  -e INFLUXDB_USER=netpaca -e INFLUXDB_USER_PASSWORD=supersecret \
   -e INFLUXDB_DB=optics \
   -v $PWD:/var/lib/influxdb \
   influxdb /init-influxdb.sh
